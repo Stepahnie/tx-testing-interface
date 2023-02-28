@@ -1,0 +1,37 @@
+Category,Definition 
+Betting Payout,category for all incoming transactions that are recognized as income from gambling.
+Betting Deposit,category for all outgoing transactions that are recognized as payments to gambling institutions.
+Bills,All income transactions that are recognized as income from bills. Typically this category appears for self-employed private individuals that can issue a bill for their services.
+Cash Deposit,"All cash deposits at an ATM, Bank Counter etc."
+Cash Withdrawal,All outgoing transactions that are recognized as cash withdrawals at ATM machines.
+Cheque,All outgoing transactions that are recognized as cheque withdrawals.
+Cheque Deposits,Cheque deposit into account
+Education,"All outgoing transactions related to education including high scools, universities, online courses, driving scool and similar."
+Entertainment ,"category for all expense transactions that are recognized entertainment, Netflix, Apple Music"
+Bank Charges,"All outgoing transactions that are recognized as financial services and various commissions, for example, cash withdrawal commission, various card fees and similar."
+Food,category for all expense transactions that are recognized as food-related expenses.
+Gifts Donations ,"All outgoing transactions made to flower shops, jewelry stores, photo shops and private individual money transfers on birthday."
+Groceries ,"All transactions that are recognized as payments to grocery stores, hypermarkets, or supermarkets."
+Health ,"All outgoing transactions related to health including pharmacies, hospitals and similar."
+Interest Received,"All incoming transactions that are recognized as interest payments. Interest income is money earned by an individual or company for lending their funds, either by putting them into a deposit account in a bank"
+Investment Payout,All incoming transactions that are recognized as income from investments and currency trading.
+Investment Deposit,"Transfers to related to investments, for example, transfers to investment platforms."
+Leisure Activities Traveling,category for all expense transactions that are recognized as leisure activities and traveling.
+Loans,category for all incoming transactions that are recognized as Loans. eg Payable loans
+Loan Repayments ,category for all outgoings  transactions that are recognized as Loans. eg Payable loans
+Other Outgoing Payments ,category for all outgoing transactions that do not hold enough information to be able categorize with greater granularity. 
+Online Payments,"Outgoing payments through online payment platforms, like Paypal, Chipper cash, flutterwave"
+Other Incoming payments,category for all incoming transactions that do not hold enough information to be able categorise with greater granularity.
+Other Incoming Payments From Employer,"All other incoming transactions from the employer that is not salary. For example, per diems or reimbursements."
+Personal Care,"All outgoing transactions related to active lifestyle, for instance, gym membership, sportswear apparel, and sports nutrition, eden life"
+Personal Transfer,category for all incoming transactions that are recognized as personal transfers. Personal transfers are defined as transfers that are received from or sent to a private individual.
+Personal Transfer,category for all incoming transactions that are recognized as personal transfers. Personal transfers are defined as transfers that are received from or sent to a private individual.
+Phone Internet ,"All transactions that are recognized as payments for mobile phone plans, internet plans"
+Rent Maintanence,"All transactions that are recognized as utility payments for rent and maintenane, property management"
+Returned Debit,"All income transactions that are return of funds to a private individual (consumer), forcibly initiated by the issuing bank of the instrument used by a consumer to settle a debt."
+Salary,"All incoming transactions that are recognized as salary payments from an employer. Typically these transactions occur with some time period regularity, for example, on monthly or weekly or other time period regularity basis"
+Savings,"Transfers to related to savings, for example, transfers to savings account."
+Unknown,All unrecognized transactions
+Transport,category for all expense transactions that are recognized transportation-related expenses.
+Unknown,All unrecognized transactions
+Utility Services,"category for all expense transactions that are recognized as Utility services. Usually these transactions occur with some time period regularity, for example, on monthly basis."

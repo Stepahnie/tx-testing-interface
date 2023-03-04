@@ -25,13 +25,11 @@ Other Incoming payments,category for all incoming transactions that do not hold 
 Other Incoming Payments From Employer,"All other incoming transactions from the employer that is not salary. For example, per diems or reimbursements."
 Personal Care,"All outgoing transactions related to active lifestyle, for instance, gym membership, sportswear apparel, and sports nutrition, eden life"
 Personal Transfer,category for all incoming transactions that are recognized as personal transfers. Personal transfers are defined as transfers that are received from or sent to a private individual.
-Personal Transfer,category for all incoming transactions that are recognized as personal transfers. Personal transfers are defined as transfers that are received from or sent to a private individual.
 Phone Internet ,"All transactions that are recognized as payments for mobile phone plans, internet plans"
 Rent Maintanence,"All transactions that are recognized as utility payments for rent and maintenane, property management"
 Returned Debit,"All income transactions that are return of funds to a private individual (consumer), forcibly initiated by the issuing bank of the instrument used by a consumer to settle a debt."
 Salary,"All incoming transactions that are recognized as salary payments from an employer. Typically these transactions occur with some time period regularity, for example, on monthly or weekly or other time period regularity basis"
 Savings,"Transfers to related to savings, for example, transfers to savings account."
-Unknown,All unrecognized transactions
 Transport,category for all expense transactions that are recognized transportation-related expenses.
 Unknown,All unrecognized transactions
 Utility Services,"category for all expense transactions that are recognized as Utility services. Usually these transactions occur with some time period regularity, for example, on monthly basis."

@@ -17,6 +17,8 @@ st.title('TRANSACTION CLASSIFIER TESTING')
 st.info('Hey there, kindly upload a JSON file containing Transaction Data Obejects. See Example below 🥷', icon="ℹ️")
 
 
+def get_ticked_rows( array):
+    return  [ obj['_selectedRowNodeInfo']['nodeRowIndex'] for obj in array]
 
 @st.cache_data (show_spinner=False)
 def get_category(data):
@@ -59,12 +61,21 @@ if uploaded_file is not None:
     result = {}
     if  len(data['data'] )<= 20:
         # do API Call here
-        with st.spinner(text="Fetching measures"):
-            cat_result = get_category(data)
+        with st.spinner(text="Fetching Categorisation"):
+            try:
+                cat_result = get_category(data)
+            except Exception as e:
+                st.write(e)
         
         result['data'] = cat_result['data']
     else:
         st.warning('🚨 You have inputed {} transaction which is more than 20, 🧐 Oya Please reduce it and try again so we can continue...'.format(len(data['data'])))
+
+    # GET ALL BANKS Used by MONO
+    option = st.selectbox(
+    "Which Bank's Data are you using",
+    ('',' GT-Bank', 'Kuda', 'FCMB'))
+
     st.markdown("[Analyze the Categories and Leave Your Feedback Here, Please ✌️](https://forms.gle/k1SbVFDXpPYJKpDY6)")
     df = pd.json_normalize(result['data'])
 
@@ -88,18 +99,44 @@ if uploaded_file is not None:
 
         header_checkbox_selection_filtered_only=True,
     )
+
+
     sel_row = grid_table["selected_rows"]
-    st.write(sel_row)
-    v = grid_table['selected_rows']
+    selected_idx = get_ticked_rows(sel_row)
+
+    final_data = []
+    for data_idx in range(len(df)):
+        if data_idx in selected_idx:
+            final_data.append(
+                {
+                    'bank': option,
+                    'category': df.loc[data_idx]['category'], 
+                    'narration': df.loc[data_idx]['narration'],
+                    'type': df.loc[data_idx]['type'],
+                    'amount': df.loc[data_idx]['amount'],
+                    'prediction': 'correct'
+                }
+            )
+        else:
+            final_data.append(
+                {
+                    'bank': option,
+                    'category': df.loc[data_idx]['category'], 
+                    'narration': df.loc[data_idx]['narration'],
+                    'type': df.loc[data_idx]['type'],
+                    'amount': df.loc[data_idx]['amount'],
+                    'prediction': 'incorrect'
+                }
+            )
+    st.write(final_data)
+    if st.button('Done'):
+        #reset page. send to DB OR Goolgle sheets. maybe firebase
+        st.write('Why hello there')
+
+
 
 
 cat_data = pd.read_csv('./category_data.csv')
 expander = st.expander("See Category Explanations")
 expander.table( cat_data)
 
-# progress_text = "Operation in progress. Please wait."
-# my_bar = st.progress(0, text=progress_text)
-
-# for percent_complete in range(100):
-#     time.sleep(0.1)
-#     my_bar.progress(percent_complete + 1, text=progress_text)

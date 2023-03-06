@@ -56,7 +56,7 @@ if uploaded_file is not None:
    
     try:
         data = json.loads(bytes_data)
-        st.write("view uploaded file")
+        st.write("pre-view uploaded")
         st.json(data, expanded= False)
     except Exception as e:
         st.write(e)
@@ -80,7 +80,7 @@ if uploaded_file is not None:
     "Which Bank's Data are you using",
     ('',' GT-Bank', 'Kuda', 'FCMB'))
 
-    st.markdown("[Analyze the Categories and Leave Your Feedback Here, Please ✌️](https://forms.gle/k1SbVFDXpPYJKpDY6)")
+    st.write('Tick the correctly predicted transactions')
     df = pd.json_normalize(result['data'])
 
     gb = GridOptionsBuilder.from_dataframe(df.loc[:, ['category','narration','amount']])
@@ -104,7 +104,7 @@ if uploaded_file is not None:
         header_checkbox_selection_filtered_only=True,
     )
 
-
+    st.markdown("[Analyze the Categories and Leave Your Feedback Here, Please ✌️](https://forms.gle/k1SbVFDXpPYJKpDY6)")
     sel_row = grid_table["selected_rows"]
     selected_idx = get_ticked_rows(sel_row)
 
@@ -113,23 +113,23 @@ if uploaded_file is not None:
         if data_idx in selected_idx:
             final_data.append(
                 {
-                    'bank': option,
-                    'category': df.loc[data_idx]['category'], 
-                    'narration': df.loc[data_idx]['narration'],
-                    'type': df.loc[data_idx]['type'],
-                    'amount': df.loc[data_idx]['amount'],
-                    'prediction': 'correct'
+                    'bank': u"{}".format(option),
+                    'category': u"{}".format(df.loc[data_idx]['category']), 
+                    'narration': u"{}".format(df.loc[data_idx]['narration']),
+                    'type': u"{}".format(df.loc[data_idx]['type']),
+                    'amount': u"{}".format(df.loc[data_idx]['amount']),
+                    'prediction': u"correct"
                 }
             )
         else:
             final_data.append(
                 {
-                    'bank': option,
-                    'category': df.loc[data_idx]['category'], 
-                    'narration': df.loc[data_idx]['narration'],
-                    'type': df.loc[data_idx]['type'],
-                    'amount': df.loc[data_idx]['amount'],
-                    'prediction': 'incorrect'
+                    'bank': u"{}".format(option),
+                    'category': u"{}".format(df.loc[data_idx]['category']), 
+                    'narration': u"{}".format(df.loc[data_idx]['narration']),
+                    'type': u"{}".format(df.loc[data_idx]['type']),
+                    'amount': u"{}".format(df.loc[data_idx]['amount']),
+                    'prediction': u"incorrect"
                 }
             )
     # st.write(final_data)
@@ -137,16 +137,11 @@ if uploaded_file is not None:
     rev_data ={'data': final_data}
     if st.button('Done'):
         #reset page. send to DB OR Goolgle sheets. maybe firebase
+        new_arr = {"data": final_data}
+        uid  = str(uuid.uuid1().hex)
+        doc_ref = db.collection(u'tx-classifier-reviews').document(u'{}'.format(uid))
+        doc_ref.set(new_arr)
 
-        new_arr = final_data
-        st.write(type(new_arr))
-        # for i in new_arr:
-        #     st.write(i)
-        #     st.write(type(i))
-        # # uid  = str(uuid.uuid1().hex)
-        # doc_ref = db.collection(u'tx-classifier-reviews').document(u'{}'.format(uid))
-        # doc_ref.set({new_arr})
-        # st.experimental_rerun()
 
 
 

@@ -3,11 +3,16 @@ import pandas as pd
 import numpy as np
 import json
 import requests
-import time
+import uuid
 from io import StringIO
 from st_aggrid import AgGrid, GridUpdateMode, GridUpdateMode, ColumnsAutoSizeMode, DataReturnMode, ColumnsAutoSizeMode, AgGridTheme
 from st_aggrid.grid_options_builder import GridOptionsBuilder
 
+from google.cloud import firestore
+
+db = firestore.Client.from_service_account_json("./tx-classifier-test-firebase-adminsdk-zf5r6-afdfbc4345.json")
+
+# Create a reference to the Google post.
 
 
 st.set_page_config(page_title="Mono - Transaction Classifier Testingr", page_icon="🤖",   layout="wide",
@@ -42,7 +47,6 @@ code = '''
     }
 '''
 st.code(code, language='json')
-
 
 
 
@@ -128,10 +132,21 @@ if uploaded_file is not None:
                     'prediction': 'incorrect'
                 }
             )
-    st.write(final_data)
+    # st.write(final_data)
+
+    rev_data ={'data': final_data}
     if st.button('Done'):
         #reset page. send to DB OR Goolgle sheets. maybe firebase
-        st.write('Why hello there')
+
+        new_arr = final_data
+        st.write(type(new_arr))
+        # for i in new_arr:
+        #     st.write(i)
+        #     st.write(type(i))
+        # # uid  = str(uuid.uuid1().hex)
+        # doc_ref = db.collection(u'tx-classifier-reviews').document(u'{}'.format(uid))
+        # doc_ref.set({new_arr})
+        # st.experimental_rerun()
 
 
 
@@ -139,4 +154,5 @@ if uploaded_file is not None:
 cat_data = pd.read_csv('./category_data.csv')
 expander = st.expander("See Category Explanations")
 expander.table( cat_data)
+
 

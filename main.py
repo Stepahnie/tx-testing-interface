@@ -10,7 +10,7 @@ from st_aggrid.grid_options_builder import GridOptionsBuilder
 
 from google.cloud import firestore
 
-db = firestore.Client.from_service_account_json("./tx-classifier-test-firebase-adminsdk-zf5r6-afdfbc4345.json")
+# db = firestore.Client.from_service_account_json("./tx-classifier-test-firebase-adminsdk-zf5r6-afdfbc4345.json")
 
 # Create a reference to the Google post.
 
@@ -138,9 +138,9 @@ if uploaded_file is not None:
     if st.button('Done'):
         #reset page. send to DB OR Goolgle sheets. maybe firebase
         new_arr = {"data": final_data}
-        uid  = str(uuid.uuid1().hex)
-        doc_ref = db.collection(u'tx-classifier-reviews').document(u'{}'.format(uid))
-        doc_ref.set(new_arr)
+        # uid  = str(uuid.uuid1().hex)
+        # doc_ref = db.collection(u'tx-classifier-reviews').document(u'{}'.format(uid))
+        # doc_ref.set(new_arr)
 
 
 

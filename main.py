@@ -138,7 +138,7 @@ if uploaded_file is not None:
             with st.spinner(text="..."):
                 with fs.open(f"{bucket_name}/{data_file}", "rb") as f:
                     existing_data = pd.read_csv(f)
-                appended_data = pd.concat([existing_data, grid_data], ignore_index=True)
+                appended_data = pd.concat([existing_data, grid_data])
 
                 with fs.open(f"{bucket_name}/{data_file}", "w") as f:
                     appended_data.to_csv(f, index=False)

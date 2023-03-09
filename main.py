@@ -1,29 +1,30 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+from st_aggrid import AgGrid, GridUpdateMode, GridUpdateMode, ColumnsAutoSizeMode, DataReturnMode, ColumnsAutoSizeMode, AgGridTheme
+import numpy as np
 import json
 import requests
-import uuid
-from io import StringIO
-from st_aggrid import AgGrid, GridUpdateMode, GridUpdateMode, ColumnsAutoSizeMode, DataReturnMode, ColumnsAutoSizeMode, AgGridTheme
-from st_aggrid.grid_options_builder import GridOptionsBuilder
 
-from google.cloud import firestore
+import s3fs
+import os
 
-# db = firestore.Client.from_service_account_json("./tx-classifier-test-firebase-adminsdk-zf5r6-afdfbc4345.json")
-
-# Create a reference to the Google post.
 
 
 st.set_page_config(page_title="Mono - Transaction Classifier Testingr", page_icon="🤖",   layout="wide",
    initial_sidebar_state="expanded")
 st.title('TRANSACTION CLASSIFIER TESTING')
 
-st.info('Hey there, kindly upload a JSON file containing Transaction Data Obejects. See Example below 🥷', icon="ℹ️")
+st.info('Hey there, kindly upload a JSON file containing Transaction Data Obejects (less than 20). See Example below  👇🏾')
 
 
-def get_ticked_rows( array):
-    return  [ obj['_selectedRowNodeInfo']['nodeRowIndex'] for obj in array]
+fs = s3fs.S3FileSystem(anon=False)
+bucket_name = 'mono-data-science/tx-classifier-testing-data'
+data_file = 'tx-classifier-model-testing-data.csv'
+bank_file = 'mono_banks.txt'
+category_file ='categories.txt'
+
+
 
 @st.cache_data (show_spinner=False)
 def get_category(data):
@@ -48,106 +49,117 @@ code = '''
 '''
 st.code(code, language='json')
 
+def app():
+    with fs.open(f"{bucket_name}/{bank_file}", "r") as f:
+        banks = [line.strip() for line in f.readlines()]
+    
+    with fs.open(f"{bucket_name}/{category_file}", "r") as f:
+        categories = [line.strip() for line in f.readlines()]
 
+    uploaded_file = st.file_uploader("Choose a JSON file", accept_multiple_files=False)
+    if uploaded_file is not None:
+        bytes_data = uploaded_file.getvalue()
+    
+        try:
+            data = json.loads(bytes_data)
+            st.write("pre-view file")
+            st.json(data, expanded= False)
+        except Exception as e:
+            st.write(e)
+            print(e)
 
-uploaded_file = st.file_uploader("Choose a JSON file", accept_multiple_files=False)
-if uploaded_file is not None:
-    bytes_data = uploaded_file.getvalue()
-   
-    try:
-        data = json.loads(bytes_data)
-        st.write("pre-view uploaded")
-        st.json(data, expanded= False)
-    except Exception as e:
-        st.write(e)
-        print(e)
-
-    result = {}
-    if  len(data['data'] )<= 20:
+        result = {}
+        if  len(data['data'] )<= 20:
         # do API Call here
-        with st.spinner(text="Fetching Categorisation"):
-            try:
-                cat_result = get_category(data)
-            except Exception as e:
-                st.write(e)
-        
-        result['data'] = cat_result['data']
-    else:
-        st.warning('🚨 You have inputed {} transaction which is more than 20, 🧐 Oya Please reduce it and try again so we can continue...'.format(len(data['data'])))
+            with st.spinner(text="Fetching Categorisation"):
+                try:
+                    cat_result = get_category(data)
+                except Exception as e:
+                    st.write(e)
 
-    # GET ALL BANKS Used by MONO
-    option = st.selectbox(
-    "Which Bank's Data are you using",
-    ('',' GT-Bank', 'Kuda', 'FCMB'))
-
-    st.write('Tick the correctly predicted transactions')
-    df = pd.json_normalize(result['data'])
-
-    gb = GridOptionsBuilder.from_dataframe(df.loc[:, ['category','narration','amount']])
-    gb.configure_default_column(cellStyle={'color': 'black', 'font-size': '11px'}, suppressMenu=True, wrapHeaderText=True, autoHeaderHeight=True)
-    custom_css = {".ag-header-cell-text": {"font-size": "11px", 'text-overflow': 'revert;', 'font-weight': 500},
-      ".ag-theme-streamlit": {'transform': "scale(0.7)", "transform-origin": '0 0'}}
-    gb.configure_selection(selection_mode="multiple", use_checkbox=True)
-    gb.configure_side_bar()
-    gridoptions = gb.build()
-
-    grid_table = AgGrid(
-        df,
-        custom_css=custom_css,
-        columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
-        theme=AgGridTheme.BALHAM,
-        gridOptions=gridoptions,
-        enable_enterprise_modules=True,
-        update_mode=GridUpdateMode.MODEL_CHANGED,
-        data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-
-        header_checkbox_selection_filtered_only=True,
-    )
-
-    st.markdown("[Analyze the Categories and Leave Your Feedback Here, Please ✌️](https://forms.gle/k1SbVFDXpPYJKpDY6)")
-    sel_row = grid_table["selected_rows"]
-    selected_idx = get_ticked_rows(sel_row)
-
-    final_data = []
-    for data_idx in range(len(df)):
-        if data_idx in selected_idx:
-            final_data.append(
-                {
-                    'bank': u"{}".format(option),
-                    'category': u"{}".format(df.loc[data_idx]['category']), 
-                    'narration': u"{}".format(df.loc[data_idx]['narration']),
-                    'type': u"{}".format(df.loc[data_idx]['type']),
-                    'amount': u"{}".format(df.loc[data_idx]['amount']),
-                    'prediction': u"correct"
-                }
-            )
+            result['data'] = cat_result['data']
         else:
-            final_data.append(
-                {
-                    'bank': u"{}".format(option),
-                    'category': u"{}".format(df.loc[data_idx]['category']), 
-                    'narration': u"{}".format(df.loc[data_idx]['narration']),
-                    'type': u"{}".format(df.loc[data_idx]['type']),
-                    'amount': u"{}".format(df.loc[data_idx]['amount']),
-                    'prediction': u"incorrect"
-                }
-            )
-    # st.write(final_data)
+            st.warning('🚨 You have inputed {} transaction which is more than 20, 🧐 Oya Please reduce it and try again so we can continue...'.format(len(data['data'])))
+        
+        option = st.selectbox(
+        "What Bank's Data are you testing with?",
+        (sorted(banks)))
 
-    rev_data ={'data': final_data}
-    if st.button('Done'):
-        #reset page. send to DB OR Goolgle sheets. maybe firebase
-        new_arr = {"data": final_data}
-        # uid  = str(uuid.uuid1().hex)
-        # doc_ref = db.collection(u'tx-classifier-reviews').document(u'{}'.format(uid))
-        # doc_ref.set(new_arr)
+        st.info('Review the Categories. Double-click the Category to select your prefered category', icon="ℹ️")
+        df = pd.json_normalize(result['data'])
+        data = df.loc[:, ['category', 'narration', 'amount', 'type']]
+        # Define the column definitions for the Ag-Grid table
+
+        column_defs = [
+            {'field': 'category', 'editable': True,  'cellEditorPopupPosition': 'under',
+            'cellEditor': 'agSelectCellEditor', 'cellEditorParams': {
+                'values': sorted(categories)
+            }},
+            {'field': 'narration'},
+            {'field': 'amount'},
+            {'field': 'type'}
+        ]
+
+        # Define the Ag-Grid table configuration
+        grid_options = {
+            'columnDefs': column_defs,
+            'rowData': data.to_dict('records'),
+            'pagination': True,
+            'paginationAutoPageSize': True,
+            'domLayout': 'normal',
+            'enableCellChangeFlash': True
+        }
+        
+        custom_css = {
+            ".ag-header-cell-text": {"font-size": "13px", 'text-overflow': 'revert;', 'font-weight': 700}, ".ag-theme-streamlit": {'transform': "scale(0.9)","transform-origin": '0 0'},
+            ".ag-center-cols-container": {"font-size": "14px"},
+        }
+        # Render the Ag-Grid table
+        grid_response = AgGrid(
+            data, 
+            grid_options,
+            columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
+            custom_css=custom_css,
+            theme=AgGridTheme.ALPINE,
+            enable_enterprise_modules=True,
+            update_mode=GridUpdateMode.MODEL_CHANGED,
+            data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
+            header_checkbox_selection_filtered_only=True
+        )
+
+        grid_data = pd.DataFrame(grid_response["data"])
+        grid_data['bank'] = option
+
+        
+        if option != '':
+            submit = st.button('Submit Reviews...')
+            if submit:
+                # Load the existing CSV file from S3 into a Pandas DataFrame
+                with st.spinner(text="..."):
+                    with fs.open(f"{bucket_name}/{data_file}", "rb") as f:
+                        existing_data = pd.read_csv(f)
+                    appended_data = pd.concat([existing_data, grid_data], ignore_index=True)
+
+                    with fs.open(f"{bucket_name}/{data_file}", "w") as f:
+                        appended_data.to_csv(f, index=False)
+                    
+                        st.balloons()
+
+                    st.write('Feel free to upload and review another  set of Data')
+                    st.markdown("[Analyze the Categories and Leave Your Feedback Here, Pleas](https://forms.gle/k1SbVFDXpPYJKpDY6)")
+        else:
+            st.write('Please Select a Bank above to Proceed 👆🏾')
+
+
+
+    cat_data = pd.read_csv('./category_data.csv')
+    expander = st.expander("See Category Explanations")
+    expander.table( cat_data)
 
 
 
 
 
-cat_data = pd.read_csv('./category_data.csv')
-expander = st.expander("See Category Explanations")
-expander.table( cat_data)
-
-
+# Run the Streamlit app
+if __name__ == "__main__":
+    app()

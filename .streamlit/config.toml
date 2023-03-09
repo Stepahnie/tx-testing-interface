@@ -1,3 +1,4 @@
 [theme]
 base="light"
-font="serif"
+primaryColor="#4b8aff"
+font="monospace"

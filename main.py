@@ -1,7 +1,8 @@
-import streamlit as st
+import requests
+import json
 import pandas as pd
-import numpy as np
-from st_aggrid import AgGrid, GridUpdateMode, GridUpdateMode, ColumnsAutoSizeMode, DataReturnMode, ColumnsAutoSizeMode, AgGridTheme
+import streamlit as st
+
 import numpy as np
 import json
 import requests
@@ -14,8 +15,6 @@ import os
 st.set_page_config(page_title="Mono - Transaction Classifier Testingr", page_icon="🤖",   layout="wide",
    initial_sidebar_state="expanded")
 st.title('TRANSACTION CLASSIFIER TESTING')
-
-st.info('Hey there, kindly upload a JSON file containing Transaction Data Obejects (less than 20). See Example below  👇🏾')
 
 
 fs = s3fs.S3FileSystem(anon=False)
@@ -34,18 +33,22 @@ def get_category(data):
     model_result = json.loads(output.text)
     return model_result
 
-code = '''
-{  "data": [
-        {"_id": "62e90f5678d95406325411a7",
-        "type": "debit",
-        "amount": 10000,
-        "narration": "00001322 VIA GTWORLD TO ABEGAPP CIROMA CHUKWUMA ADEKUNLE /10.75/REF:GW2148344014000000010022080212 F",
-        "date": "2022-08-02T12:48:00.200Z",
-        "balance": 0,
-        "currency": "NGN"},
-            ...
-        ]
+@st.cache_data (show_spinner=False)
+
+
+def get_transactions(account_id, mono_sec_key):
+
+    url = f"https://api.withmono.com/accounts/{account_id}/transactions?limit=32"
+    headers = {
+        "Accept": "application/json",
+        "mono-sec-key":  mono_sec_key
     }
+    response = requests.get(url, headers=headers)
+    meta_data = json.loads(response.text)
+    return meta_data['data']
+
+code = '''
+    "62e90f4c78d95406325410c4", "live_sk_a7pIgl733FWNm7qSWpJ1"
 '''
 st.code(code, language='json')
 
@@ -55,109 +58,93 @@ with fs.open(f"{bucket_name}/{bank_file}", "r") as f:
 
 with fs.open(f"{bucket_name}/{category_file}", "r") as f:
     categories = [line.strip() for line in f.readlines()]
+    categories.insert(0, '')
 
-uploaded_file = st.file_uploader("Choose a JSON file", accept_multiple_files=False)
-if uploaded_file is not None:
-    bytes_data = uploaded_file.getvalue()
+if 'stage' not in st.session_state:
+    st.session_state.stage = 0
 
-    try:
-        data = json.loads(bytes_data)
-        st.write("pre-view file")
-        st.json(data, expanded= False)
-    except Exception as e:
-        st.write(e)
-        print(e)
+def set_stage(stage):
+    st.session_state.stage = stage
 
-    result = {}
-    if  len(data['data'] )<= 20:
-    # do API Call here
-        with st.spinner(text="Fetching Categorisation"):
-            try:
-                cat_result = get_category(data)
-            except Exception as e:
-                st.write(e)
 
-        result['data'] = cat_result['data']
-    else:
-        st.warning('🚨 You have inputed {} transaction which is more than 20, 🧐 Oya Please reduce it and try again so we can continue...'.format(len(data['data'])))
+
+if 'select_values' not in st.session_state:
+    st.session_state.select_values = {}
+res =[]
+with st.form("my_form"):
+    account_id = st.text_input('Enter Account ID', key='id')
+    mono_sec_key = st.text_input('Enter Secret Key', key='sec_key')
+   
+    get_trans = st.form_submit_button('Fetch Transactions', on_click=set_stage, args=(1,))
+    if st.session_state.stage > 0: 
+        res = get_transactions(account_id, mono_sec_key)
+        _data = get_category({'data': res})
+        final_data = _data['data']
+        df = pd.DataFrame(final_data)
+        col1, col2 = st.columns([2, 2])
+
+        with col1:
+            bank = st.selectbox(
+            "Select Bank", (sorted(banks)))
+
+        with col2:
+             country = st.selectbox(
+            "Select Country", ('Nigeria','Ghana','Kenya', 'South Africa'))
+             
+        for val in range(len(final_data)):
+            col1, col2 = st.columns([1, 3])
+
+            with col1:
+                key = f'select_{val}'
+                selected_val = st.selectbox(
+                    'Select Prefered Category',
+                    sorted(categories),
+                    key=key
+                )
+                st.session_state.select_values[key] = selected_val
+            
+            with col2:
+                hide_dataframe_row_index  = """
+                <style>
+                thead tr th:first-child {display:none}
+                tbody th {display:none}
+                </style>
+                """
+                st.markdown(hide_dataframe_row_index, unsafe_allow_html=True)
+
+                st.dataframe(pd.DataFrame( 
+                    {'Predicted Category': [final_data[val]['category']],
+                        'Narration': [final_data[val]['narration']], 
+                        'Type': [final_data[val]['type']], 
+                        'Amount':[final_data[val]['amount']]
+                    }), 
+                    width=200,
+                    use_container_width=True)
     
-    option = st.selectbox(
-    "What Bank's Data are you testing with?",
-    (sorted(banks)))
+        submitted = st.form_submit_button("Submit Review",  args=(2,))
 
-    st.info('Review the Categories. Double-click the Category to select your prefered category', icon="ℹ️")
-    df = pd.json_normalize(result['data'])
-    data = df.loc[:, ['category', 'narration', 'amount', 'type']]
-    # Define the column definitions for the Ag-Grid table
-
-    column_defs = [
-        {'field': 'category', 'editable': True,  'cellEditorPopupPosition': 'under',
-        'cellEditor': 'agSelectCellEditor', 'cellEditorParams': {
-            'values': sorted(categories)
-        }},
-        {'field': 'narration'},
-        {'field': 'amount'},
-        {'field': 'type'}
-    ]
-
-    # Define the Ag-Grid table configuration
-    grid_options = {
-        'columnDefs': column_defs,
-        'rowData': data.to_dict('records'),
-        'pagination': True,
-        'paginationAutoPageSize': True,
-        'domLayout': 'normal',
-        'enableCellChangeFlash': True
-    }
-    
-    custom_css = {
-        ".ag-header-cell-text": {"font-size": "13px", 'text-overflow': 'revert;', 'font-weight': 700}, ".ag-theme-streamlit": {'transform': "scale(0.9)","transform-origin": '0 0'},
-        ".ag-center-cols-container": {"font-size": "14px"},
-    }
-    # Render the Ag-Grid table
-    grid_response = AgGrid(
-        data, 
-        grid_options,
-        columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
-        custom_css=custom_css,
-        theme=AgGridTheme.ALPINE,
-        enable_enterprise_modules=True,
-        update_mode=GridUpdateMode.MODEL_CHANGED,
-        data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-        header_checkbox_selection_filtered_only=True
-    )
-
-    grid_data = pd.DataFrame(grid_response["data"])
-    grid_data['bank'] = option
-
-    
-    if option != '':
-        submit = st.button('Submit Reviews...')
-        if submit:
-            # Load the existing CSV file from S3 into a Pandas DataFrame
+        if submitted and st.session_state.stage > 0:
+            prefered_category = [val for val in st.session_state.select_values.values() ]
+            collated_data = pd.DataFrame(df.loc[:, ['narration', 'amount', 'type','category']])
+            collated_data['country'] = country
+            collated_data['bank'] = bank
+            collated_data['prefered category'] = prefered_category
+            collated_data.rename(columns={'category':'predicted category'}, inplace=True)
+            
             with st.spinner(text="..."):
                 with fs.open(f"{bucket_name}/{data_file}", "rb") as f:
                     existing_data = pd.read_csv(f)
-                appended_data = pd.concat([existing_data, grid_data], axis=0, join='inner')
+                appended_data = pd.concat([existing_data, collated_data], axis=0, join='inner')
 
                 with fs.open(f"{bucket_name}/{data_file}", "w") as f:
                     appended_data.to_csv(f, index=False)
-                
                     st.balloons()
 
-                st.write('Feel free to upload and review another  set of Data')
-                st.markdown("[Analyze the Categories and Leave Your Feedback Here, Pleas](https://forms.gle/k1SbVFDXpPYJKpDY6)")
-    else:
-        st.write('Please Select a Bank above to Proceed 👆🏾')
-
-
-
+# if st.session_state.stage > 2:
+#     st.write('The end')
+    
+st.button('Reset', on_click=set_stage, args=(0,))
+    
 cat_data = pd.read_csv('./category_data.csv')
 expander = st.expander("See Category Explanations")
 expander.table( cat_data)
-
-
-
-
-
-

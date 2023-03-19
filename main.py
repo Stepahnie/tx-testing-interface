@@ -9,6 +9,7 @@ import requests
 
 import s3fs
 import os
+import datetime
 
 
 
@@ -22,6 +23,7 @@ bucket_name = 'mono-data-science/tx-classifier-testing-data'
 data_file = 'tx-classifier-model-testing-data.csv'
 bank_file = 'mono_banks.txt'
 category_file ='categories.txt'
+eval_data = 'model_scores.csv'
 
 
 
@@ -47,10 +49,6 @@ def get_transactions(account_id, mono_sec_key):
     meta_data = json.loads(response.text)
     return meta_data['data']
 
-code = '''
-    "62e90f4c78d95406325410c4", "live_sk_a7pIgl733FWNm7qSWpJ1"
-'''
-st.code(code, language='json')
 
 
 with fs.open(f"{bucket_name}/{bank_file}", "r") as f:
@@ -130,7 +128,20 @@ with st.form("my_form"):
             collated_data['bank'] = bank
             collated_data['prefered category'] = prefered_category
             collated_data.rename(columns={'category':'predicted category'}, inplace=True)
+            collated_data = collated_data.reindex(columns=['narration', 'amount', 'type', 'predicted category','prefered category'])
             
+            evaluation_data = pd.DataFrame(columns=['session Id','correct predictions','incorrect predictions','score(over 100)'])
+
+            test_id = 'test_Id_' + datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+
+            correct = [val for val in prefered_category if val == '' ]
+            incorrect = [val for val in prefered_category if val != '' ]
+            evaluation_data['session Id'] = [test_id]
+            evaluation_data['correct predictions'] = [len(correct)]
+            evaluation_data['incorrect predictions'] = [len(incorrect)]
+            score = len(correct)/len(prefered_category) * 100
+            evaluation_data['score(over 100)'] = [score]
+
             with st.spinner(text="..."):
                 with fs.open(f"{bucket_name}/{data_file}", "rb") as f:
                     existing_data = pd.read_csv(f)
@@ -138,10 +149,16 @@ with st.form("my_form"):
 
                 with fs.open(f"{bucket_name}/{data_file}", "w") as f:
                     appended_data.to_csv(f, index=False)
+
+            with st.spinner(text="evaluating..."):
+                with fs.open(f"{bucket_name}/{eval_data}", "rb") as f:
+                    eval_existing_data = pd.read_csv(f)
+                appended_data = pd.concat([eval_existing_data, evaluation_data], axis=0, join='inner')
+
+                with fs.open(f"{bucket_name}/{eval_data}", "w") as f:
+                    appended_data.to_csv(f, index=False)
                     st.balloons()
 
-# if st.session_state.stage > 2:
-#     st.write('The end')
     
 st.button('Reset', on_click=set_stage, args=(0,))
     

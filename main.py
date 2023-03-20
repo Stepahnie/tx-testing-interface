@@ -17,7 +17,7 @@ st.set_page_config(page_title="Mono - Transaction Classifier Testingr", page_ico
    initial_sidebar_state="expanded")
 st.title('TRANSACTION CLASSIFIER TESTING')
 
-
+st.info('Connect an account on Quickstart [See Here](https://quickstart.withmono.com/) ', icon="ℹ️")
 fs = s3fs.S3FileSystem(anon=False)
 bucket_name = 'mono-data-science/tx-classifier-testing-data'
 data_file = 'tx-classifier-model-testing-data.csv'
@@ -31,23 +31,30 @@ eval_data = 'model_scores.csv'
 def get_category(data):
     # with st.spinner('Please Hold on a little ... '):
     api_url = "http://txcc.withmono.com/transaction-classifier"
-    output = requests.post(url=api_url, json=data)
-    model_result = json.loads(output.text)
-    return model_result
+    try:
+        output = requests.post(url=api_url, json=data)
+        model_result = json.loads(output.text)
+        return model_result
+    except Exception as e:
+        st.write(e)
+        return e
 
 @st.cache_data (show_spinner=False)
 
 
 def get_transactions(account_id, mono_sec_key):
-
     url = f"https://api.withmono.com/accounts/{account_id}/transactions?limit=32"
     headers = {
         "Accept": "application/json",
         "mono-sec-key":  mono_sec_key
     }
-    response = requests.get(url, headers=headers)
-    meta_data = json.loads(response.text)
-    return meta_data['data']
+    try:
+        response = requests.get(url, headers=headers)
+        meta_data = json.loads(response.text)
+        return meta_data['data']
+    except Exception as e:
+        st.write(e)
+        return e
 
 
 
@@ -71,23 +78,37 @@ if 'select_values' not in st.session_state:
 res =[]
 with st.form("my_form"):
     account_id = st.text_input('Enter Account ID', key='id')
-    mono_sec_key = st.text_input('Enter Secret Key', key='sec_key')
-   
-    get_trans = st.form_submit_button('Fetch Transactions', on_click=set_stage, args=(1,))
-    if st.session_state.stage > 0: 
-        res = get_transactions(account_id, mono_sec_key)
-        _data = get_category({'data': res})
-        final_data = _data['data']
-        df = pd.DataFrame(final_data)
-        col1, col2 = st.columns([2, 2])
+    col1, col2 = st.columns([2, 2])
 
-        with col1:
-            bank = st.selectbox(
+    with col2:
+        bank = st.selectbox(
             "Select Bank", (sorted(banks)))
 
-        with col2:
-             country = st.selectbox(
-            "Select Country", ('Nigeria','Ghana','Kenya', 'South Africa'))
+    with col1:
+        country = st.selectbox(
+            "Select Country", ('', 'Nigeria','Ghana','Kenya', 'South Africa'))
+
+
+    get_trans = st.form_submit_button('Categorize', 
+    on_click=set_stage, args=(1,))
+
+
+    if st.session_state.stage > 0: 
+        if country == 'Nigeria':
+            mono_sec_key = 'live_sk_8tlpVYjA3ljKzb9pHVIA'
+        elif country == 'Ghana':
+            mono_sec_key = 'live_sk_YXBG37CET1gSQ9SHKKrp'
+        elif country == 'Kenya':
+            mono_sec_key = 'live_sk_ZGwN0IazPoNNyxdpxoqR'
+        elif country == 'South Africa':
+            mono_sec_key = 'live_sk_wQhAoRE7S6Er5EL80Ngc'
+        
+        with st.spinner(text="Processing ..."):
+            res = get_transactions(account_id, mono_sec_key)
+            _data = get_category({'data': res})
+        final_data = _data['data']
+        df = pd.DataFrame(final_data)
+
              
         for val in range(len(final_data)):
             col1, col2 = st.columns([1, 3])
@@ -160,7 +181,7 @@ with st.form("my_form"):
                     st.balloons()
 
     
-st.button('Reset', on_click=set_stage, args=(0,))
+st.button('Reset Output', on_click=set_stage, args=(0,))
     
 cat_data = pd.read_csv('./category_data.csv')
 expander = st.expander("See Category Explanations")

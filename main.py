@@ -160,7 +160,7 @@ with st.form("my_form"):
             evaluation_data['session Id'] = [test_id]
             evaluation_data['correct predictions'] = [len(correct)]
             evaluation_data['incorrect predictions'] = [len(incorrect)]
-            score = len(correct)/len(prefered_category) * 100
+            score = len(correct)/len(collated_data) * 100
             evaluation_data['score(over 100)'] = [score]
 
             with st.spinner(text="..."):

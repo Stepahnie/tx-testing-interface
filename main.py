@@ -149,7 +149,7 @@ with st.form("my_form"):
             collated_data['bank'] = bank
             collated_data['prefered category'] = prefered_category
             collated_data.rename(columns={'category':'predicted category'}, inplace=True)
-            collated_data = collated_data.reindex(columns=['narration', 'amount', 'type', 'predicted category','prefered category'])
+            collated_data = collated_data.reindex(columns=['narration', 'amount', 'type','bank','country','predicted category','prefered category'])
             
             evaluation_data = pd.DataFrame(columns=['session Id','correct predictions','incorrect predictions','score(over 100)'])
 

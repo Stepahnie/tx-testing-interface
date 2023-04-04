@@ -18,6 +18,7 @@ st.set_page_config(page_title="Mono - Transaction Classifier Testingr", page_ico
 st.title('TRANSACTION CLASSIFIER TESTING')
 
 st.info('Connect an account on Quickstart [See Here](https://quickstart.withmono.com/) ', icon="ℹ️")
+
 fs = s3fs.S3FileSystem(anon=False)
 bucket_name = 'mono-data-science/tx-classifier-testing-data'
 data_file = 'tx-classifier-model-testing-data.csv'
@@ -29,8 +30,8 @@ eval_data = 'model_scores.csv'
 
 @st.cache_data (show_spinner=False)
 def get_category(data):
-    # with st.spinner('Please Hold on a little ... '):
-    api_url = "http://txcc.withmono.com/transaction-classifier"
+    # with st.spinner('Please Hold on a little ... '): 
+    api_url = "http://txcc-staging.withmono.com/"
     try:
         output = requests.post(url=api_url, json=data)
         model_result = json.loads(output.text)

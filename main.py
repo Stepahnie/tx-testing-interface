@@ -31,7 +31,7 @@ eval_data = 'model_scores.csv'
 @st.cache_data (show_spinner=False)
 def get_category(data):
     # with st.spinner('Please Hold on a little ... '): 
-    api_url = "http://txcc-staging.withmono.com/"
+    api_url = "http://txcc-staging.withmono.com/transaction-classifier"
     try:
         output = requests.post(url=api_url, json=data)
         model_result = json.loads(output.text)
